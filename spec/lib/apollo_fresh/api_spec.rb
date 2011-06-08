@@ -1,79 +1,65 @@
 require 'spec_helper'
 
-class ApolloFresh::Model_ChildTest < ApolloFresh::Api
-
-end
-
-class ApolloFresh::Model_CleanTest < ApolloFresh::Api
-
-end
-
 describe ApolloFresh::Api do
+
+  let(:klass) do
+    ApolloFresh::Api
+  end
+
+  let(:child_klass) do
+    Class.new(klass) do
+    end
+  end
+
   let(:config_file) do
-    Rails.root.join('spec', 'support', 'resources', 'freshbooks.yml')
+    File.join(APOLLO_FRESH_ROOT, 'spec', 'support', 'resources', 'freshbooks.yml')
   end
 
   let(:child_config_file) do
-    Rails.root.join('spec', 'support', 'resources', 'freshbooks-child.yml')
+    File.join(APOLLO_FRESH_ROOT, 'spec', 'support', 'resources', 'freshbooks-child.yml')
   end
 
   before(:each) do
-    ApolloFresh::Api.resource = 'invoice'
-    ApolloFresh::Api.config_file = config_file
+    klass.resource = 'invoice'
+    klass.config_file = config_file
   end
 
   after(:each) do
-    [:api_url, :resource, :loaded_config_file, :config_file].each {|v| ApolloFresh::Api.send("#{v.to_s}=", nil)}
-    ApolloFresh::Model_CleanTest.config_file = nil
+    [:api_url, :resource, :loaded_config_file, :config_file].each {|v| klass.send("#{v.to_s}=", nil)}
+    child_klass.config_file = nil
   end
 
   it "Should have included module HTTParty" do
-    ApolloFresh::Api.should include(HTTParty)
+    klass.should include(HTTParty)
   end
 
-  describe "#self.config_file" do
-    it "Should return Rails.root.join('config', 'freshbooks.yml') for config when nil" do
-      ApolloFresh::Api.config_file = nil
-      ApolloFresh::Api.config_file.should == Rails.root.join('config', 'freshbooks.yml')
+  describe "#self.config_file=" do
+
+    it "Should allow us to set config_file" do
+      klass.config_file = config_file
+      klass.config_file.should == config_file
     end
 
-    it "Should allow us to override default with config_file = " do
-      ApolloFresh::Api.config_file = config_file
-      ApolloFresh::Api.config_file.should == config_file
-    end
-
-    it "Should allow children to override config_file without changing parent" do
-      ApolloFresh::Model_CleanTest.config_file = child_config_file
-      ApolloFresh::Model_CleanTest.config_file.should == child_config_file
-
-      ApolloFresh::Api.config_file.should_not == child_config_file
-    end
-
-    it "Should descend to parent when child is set to nil" do
-      ApolloFresh::Model_CleanTest.config_file = nil
-      ApolloFresh::Model_CleanTest.config_file.should == config_file
-    end
   end
-
 
   describe "#self.authenticate!" do
     before(:each) do
-      ApolloFresh::Api.api_key = 'password'
+      klass.api_key = 'password'
     end
 
     it "should set basic_auth" do
       #Freshbooks uses api_key as username this is intentional
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:basic_auth).with('password', 'X').once()
 
-      ApolloFresh::Api.authenticate!
+      klass.authenticate!
     end
   end
 
   describe "#self.loaded_config_file" do
-    before(:each) { ApolloFresh::Api.load_config! }
+    before(:each) { klass.load_config! }
     it "Should be same as config_file after load_config!" do
-      ApolloFresh::Api.loaded_config_file.should == config_file
+      klass.loaded_config_file.should == config_file
     end
   end
 
@@ -81,30 +67,30 @@ describe ApolloFresh::Api do
 
     context "When it has not loaded" do
       it "Should not be marked at loaded" do
-        ApolloFresh::Api.should_not have_config_loaded
+        klass.should_not have_config_loaded
       end
     end
 
     context "When it has loaded" do
-      before(:each) { ApolloFresh::Api.load_config! }
+      before(:each) { klass.load_config! }
       
       it "Should be properly marked as loaded" do
-        ApolloFresh::Api.should have_config_loaded
+        klass.should have_config_loaded
       end
 
       it "Should also have subclasses marked as loaded" do
-        ApolloFresh::Model_CleanTest.should have_config_loaded
+        child_klass.should have_config_loaded
       end
 
       it "Should not mark subclass as loaded if config_file is different and not loaded" do
-        ApolloFresh::Model_CleanTest.config_file = child_config_file
-        ApolloFresh::Model_CleanTest.should_not have_config_loaded
+        child_klass.config_file = child_config_file
+        child_klass.should_not have_config_loaded
       end
 
       it "Should mark subclass as loaded if config_file is different but loaded" do
-        ApolloFresh::Model_CleanTest.config_file = child_config_file
-        ApolloFresh::Model_CleanTest.load_config!
-        ApolloFresh::Model_CleanTest.should have_config_loaded
+        child_klass.config_file = child_config_file
+        child_klass.load_config!
+        child_klass.should have_config_loaded
       end
     end
   end
@@ -112,32 +98,32 @@ describe ApolloFresh::Api do
   describe "#self.load_config!" do
     context "When has not loaded" do
       it "Should call authenticate when loaded" do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:authenticate!).once()
-        ApolloFresh::Api.load_config!
+        klass.load_config!
       end
     end
 
     context "When has loaded" do
-      before(:each) { ApolloFresh::Api.load_config! }
+      before(:each) { klass.load_config! }
 
       it "Should load config file and set api_key and api_url (uses database.yml format)" do
         api_key_will = 'test_key'
         api_url_will = 'test'
 
-        ApolloFresh::Api.api_key.should == api_key_will
-        ApolloFresh::Api.api_url.should == api_url_will
+        klass.api_key.should == api_key_will
+        klass.api_url.should == api_url_will
       end
 
       it "Should allow children to specify their own config file" do
-        ApolloFresh::Model_CleanTest.config_file = child_config_file
-        ApolloFresh::Model_CleanTest.load_config!
+        child_klass.config_file = child_config_file
+        child_klass.load_config!
 
         api_key_will = 'c-test_key'
         api_url_will = 'c-test'
 
-        ApolloFresh::Model_CleanTest.api_key.should == api_key_will
-        ApolloFresh::Model_CleanTest.api_url.should == api_url_will
+        child_klass.api_key.should == api_key_will
+        child_klass.api_url.should == api_url_will
       end
     end
   end
@@ -145,14 +131,14 @@ describe ApolloFresh::Api do
 
   describe "#self.resource" do
     it "Should be set at the class level" do
-      ApolloFresh::Model_CleanTest.resource = 'invoices'
-      ApolloFresh::Model_CleanTest.resource.should == 'invoices'
+      child_klass.resource = 'invoices'
+      child_klass.resource.should == 'invoices'
     end
   end
 
   describe "#self.as_resource" do
     it "Should temporarily set resource during block" do
-      model = ApolloFresh::Api
+      model = klass
       model.as_resource('test_resource') do |resource|
         resource.should == model
         resource.resource.should == 'test_resource'
@@ -163,11 +149,11 @@ describe ApolloFresh::Api do
 
   describe "#self.api_request" do
     it "Should generate post request with only the xml data" do
-      url = ApolloFresh::Api.api_url
-      xml = ApolloFresh::Api.build_xml('resource.operation', {'one' => 'one'})
-      model = flexmock(ApolloFresh::Api)
+      url = klass.api_url
+      xml = klass.build_xml('resource.operation', {'one' => 'one'})
+      model = flexmock(klass)
       model.should_receive(:post_to_api).once.with(url, {:body => xml})
-      ApolloFresh::Api.api_request(xml)
+      klass.api_request(xml)
     end
   end
 
@@ -195,7 +181,7 @@ describe ApolloFresh::Api do
 
     context "When building queries" do
       let(:xml) do
-        ApolloFresh::Api.build_xml('list', xml_request, :query)
+        klass.build_xml('list', xml_request, :query)
       end
 
       subject { xml }
@@ -216,7 +202,7 @@ describe ApolloFresh::Api do
 
     context "When building objects" do
       let(:xml) do
-        ApolloFresh::Api.build_xml('list', xml_request, :object)
+        klass.build_xml('list', xml_request, :object)
       end
 
       subject { xml }
@@ -249,7 +235,7 @@ describe ApolloFresh::Api do
     end
 
     before(:each) do
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:api_request).at_most.once.returns(response)
     end
 
@@ -290,37 +276,37 @@ describe ApolloFresh::Api do
     end
 
     it "Should not have a loaded configuration" do
-      ApolloFresh::Api.should_not have_config_loaded
+      klass.should_not have_config_loaded
     end
 
     it "Should load configuration on fetch if not already loaded" do
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:load_config!).once()
-      ApolloFresh::Api.fetch(operation, params)
+      klass.fetch(operation, params)
     end
 
     it "Should have loaded configuration after first fetch" do
-      ApolloFresh::Api.fetch(operation, params)
-      ApolloFresh::Api.should have_config_loaded
+      klass.fetch(operation, params)
+      klass.should have_config_loaded
 
-      ApolloFresh::Api.api_key.should == 'test_key'
-      ApolloFresh::Api.api_url.should == 'test'
+      klass.api_key.should == 'test_key'
+      klass.api_url.should == 'test'
     end
 
     context "When results return from an unkown resource" do
-      before(:each) { ApolloFresh::Api.resource = 'unknown' }
+      before(:each) { klass.resource = 'unknown' }
       it "Should raise an ApolloFresh::Exception::ResponseError" do
         lambda {
-          ApolloFresh::Api.fetch(operation, params)
+          klass.fetch(operation, params)
         }.should raise_exception ApolloFresh::Exception::ResponseError
       end
     end
 
     context "When sending xml_type :query" do
       it "Should call build_xml with :query parameter" do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:build_xml).with(operation, params, :query)
-        ApolloFresh::Api.fetch(operation, params)
+        klass.fetch(operation, params)
       end
 
       context "When remote response with singular resource (get)" do
@@ -329,13 +315,13 @@ describe ApolloFresh::Api do
         end
 
         before(:each) do
-          model = flexmock(ApolloFresh::Api)
+          model = flexmock(klass)
           model.should_receive(:api_request).returns(response)
         end
 
         it "Should return a single invoice as a hash" do
           params = {}
-          fetch = ApolloFresh::Api.fetch('get', params)
+          fetch = klass.fetch('get', params)
           fetch.should == response['response']['invoice']
         end
 
@@ -345,9 +331,9 @@ describe ApolloFresh::Api do
 
     context "When sending xml_type :object" do
       it "Should call build_xml with :object parameter" do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:build_xml).with(operation, params, :object)
-        ApolloFresh::Api.fetch(operation, params, :object)
+        klass.fetch(operation, params, :object)
       end
 
       context "When requesting an update method" do
@@ -357,12 +343,12 @@ describe ApolloFresh::Api do
 
         context "When remote returns status = ok" do
           before(:each) do
-            model = flexmock(ApolloFresh::Api)
+            model = flexmock(klass)
             model.should_receive(:api_request).at_most.once.returns(response)
           end
 
           it "Should return true" do
-            fetch = ApolloFresh::Api.fetch('update', {:invoice_id => 1}, :object)
+            fetch = klass.fetch('update', {:invoice_id => 1}, :object)
             fetch.should be_true
           end
         end
@@ -376,12 +362,12 @@ describe ApolloFresh::Api do
 
         context 'When remote status = success and it returns invoice_id' do
           before(:each) do
-            model = flexmock(ApolloFresh::Api)
+            model = flexmock(klass)
             model.should_receive(:api_request).at_most.once.returns(response)
           end
 
           it "Should return {invoice_id => '1'}" do
-            fetch = ApolloFresh::Api.fetch('create', {:create_params => 'params'}, :object)
+            fetch = klass.fetch('create', {:create_params => 'params'}, :object)
             fetch.should == {'invoice_id' => '1'}
           end
 
@@ -396,9 +382,9 @@ describe ApolloFresh::Api do
       end
 
       before(:each) do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:api_request).returns(response)
-        @fetch = ApolloFresh::Api.fetch(operation, params)
+        @fetch = klass.fetch(operation, params)
       end
 
       it_behaves_like "successful fetch"
@@ -410,9 +396,9 @@ describe ApolloFresh::Api do
       end
 
       before(:each) do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:api_request).returns(response)
-        @fetch = ApolloFresh::Api.fetch(operation, params)
+        @fetch = klass.fetch(operation, params)
       end
 
       it_behaves_like "successful fetch"
@@ -427,11 +413,11 @@ describe ApolloFresh::Api do
       end
 
       it "Should raise ApolloFresh::Exception::ResponseError" do
-        if(ApolloFresh::Api.respond_to?(:flexmock_teardown))
-          ApolloFresh::Api.flexmock_teardown
+        if(klass.respond_to?(:flexmock_teardown))
+          klass.flexmock_teardown
         end
 
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         model.should_receive(:api_request).once().returns(invalid_method_error)
         lambda {
           model.fetch(operation, params)
@@ -443,27 +429,27 @@ describe ApolloFresh::Api do
   describe "#self.all" do
     it "Should all fetch('list', params, :query)" do
       params = {:param => 'one'}
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:fetch).once().with('list', params, :query)
-      ApolloFresh::Api.all(params)
+      klass.all(params)
     end
   end
 
   describe "#self.create" do
     it "Should call fetch('create', params, :object)" do
       params = {'create_params' => 'params'}
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:fetch).once.with('create', params, :object)
-      ApolloFresh::Api.create(params)
+      klass.create(params)
     end
   end
 
   describe "#self.update" do
     it "Should call fetch('update', params, :object)" do
       params = {'update_params' => 'params'}
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:fetch).once.with('update', params, :object)
-      ApolloFresh::Api.update(params)
+      klass.update(params)
     end
   end
 
@@ -473,14 +459,14 @@ describe ApolloFresh::Api do
     end
 
     before(:each) do
-      model = flexmock(ApolloFresh::Api)
+      model = flexmock(klass)
       model.should_receive(:api_request).returns(response)
     end
 
     context "When successful" do
       it "Should return hash" do
         params = {'invoice_id' => '1'}
-        fetch = ApolloFresh::Api.fetch('get', params)
+        fetch = klass.fetch('get', params)
         fetch.should == response['response']['invoice']
       end
     end
@@ -521,20 +507,20 @@ describe ApolloFresh::Api do
 
     context "When testing in sequence" do
       before(:each) do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         page_sequence.each do |page|
           model.should_receive(:fetch).with('list', {:page => page.params['page'].to_i, :per_page => 5}, :query).returns(page).once.ordered(:paginate)
         end
       end
 
       it "Should return requests in sequence" do
-        model = flexmock(ApolloFresh::Api)
+        model = flexmock(klass)
         page_sequence.each do |page|
           model.fetch('list', {:page => page.params['page'].to_i, :per_page => 5}, :query).should == page
         end
       end      
       it "Should return all four pages as one array" do
-        ApolloFresh::Api.all!(5).should == complete_sequence
+        klass.all!(5).should == complete_sequence
       end
     end
   end

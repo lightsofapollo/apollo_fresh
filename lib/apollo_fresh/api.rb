@@ -1,12 +1,17 @@
+require 'apollo_fresh/collection'
+require 'apollo_fresh/exception/response_error'
+
+
 module ApolloFresh
   class Api
     include HTTParty
-    class_attribute :api_key, :api_url, :resource, :_config_file, :loaded_config_file
+    class_attribute :api_key, :api_url, :resource, :config_file, :loaded_config_file
 
     PAGINATION_PARAMS = ['per_page', 'pages', 'page', 'total']
 
     # Class Methods
-    class << self      
+    class << self
+
       def as_resource(resource, &block)
         original_resource = self.resource
         self.resource = resource
@@ -15,30 +20,13 @@ module ApolloFresh
         result
       end
 
-      # If is nil in child will descend into parents until a non nil value or use config/freshbooks.yml
-      def config_file
-        config = self._config_file
-        if config.nil?
-          if(self == ApolloFresh::Api)
-            config = Rails.root.join('config', 'freshbooks.yml')
-          else
-            config = self.superclass.config_file
-          end
-        end
-        config
-      end
-
-      def config_file=(value)
-        self._config_file=(value)
-      end
-
       def has_config_loaded?
         (loaded_config_file && config_file == loaded_config_file)
       end
 
       def load_config!
         self.loaded_config_file = config_file
-        config = YAML.load_file(config_file)[Rails.env]
+        config = YAML.load_file(config_file)
         config.each do |key, value|
           self.send("#{key}=", value)
         end
@@ -95,8 +83,6 @@ module ApolloFresh
         request_xml = build_xml(method, params, xml_type)
         original_response = self.api_request(request_xml)
 
-        Rails.logger.debug(original_response)
-
         response = original_response['response']
         if(response['status'] == 'fail')
           raise ApolloFresh::Exception::ResponseError.new(response['error'])
@@ -107,7 +93,6 @@ module ApolloFresh
           singular_resource = resource
           
           unless(response.has_key?(plural_resource) || response.has_key?(singular_resource))
-            Rails.logger.error original_response.inspect
             raise(ApolloFresh::Exception::ResponseError.new(
                       "Result did not contain expected resource #{plural_resource} or #{singular_resource} in result."
             ));

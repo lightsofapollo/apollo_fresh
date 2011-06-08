@@ -12,13 +12,13 @@ def run(cmd)
 end
 
 def run_all_specs
-  run "bundle exec rspec --drb spec"
+  run "bundle exec rspec spec"
 end
 
 def run_single_spec *spec
   spec.map! {|file| File.dirname(__FILE__) + '/' + file }
   spec = spec.join(' ')
-  run "bundle exec rspec --drb #{spec}"
+  run "bundle exec rspec #{spec}"
 end
 
 def run_specs_with_shared_examples(shared_example_filename, spec_path = 'spec')

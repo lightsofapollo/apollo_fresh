@@ -1,3 +1,6 @@
+require 'apollo_fresh/configuration'
+require 'apollo_fresh/api'
+
 module ApolloFresh
 
   module_function

@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'apollo_fresh/update'
 
 class ApolloFresh::UpdateTestModel < ApolloFresh::Model
   

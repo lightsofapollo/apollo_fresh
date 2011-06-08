@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'apollo_fresh/model'
 
 describe ApolloFresh::Model do
   

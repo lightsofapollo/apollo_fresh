@@ -1,4 +1,6 @@
 require 'spec_helper'
+require 'apollo_fresh/format/hashed_array'
+
 
 describe ApolloFresh::Format::HashedArray do
 

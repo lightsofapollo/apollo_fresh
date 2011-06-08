@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'apollo_fresh/format/date_components'
 
 describe ApolloFresh::Format::DateComponents do
 
