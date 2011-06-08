@@ -14,10 +14,10 @@ To re-familiarize myself with rails / ruby / FreshBooks API (after 2 years in PH
 
 ## Tools
 
-HTTParty
-MongoDB
-ActiveSupport (sorry!)
-WillPaginate (though I think Kaminari is better now)
+ - HTTParty
+ - MongoDB
+ - ActiveSupport (sorry!)
+ - WillPaginate (though I think Kaminari is better now)
 
 ## Stats?
 
