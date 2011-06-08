@@ -10,7 +10,7 @@ and leave the API itself alone.
 
 ## Motivation
 
-To re-familiarize myself with rails (after 2 years in PHP development)
+To re-familiarize myself with rails / ruby / FreshBooks API (after 2 years in PHP development)
 
 ## Tools
 
